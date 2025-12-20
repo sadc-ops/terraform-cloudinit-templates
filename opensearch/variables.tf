@@ -53,7 +53,9 @@ variable "opensearch_cluster" {
     }), {
       index = ""
     })
+
   })
+  sensitive = true
 }
 
 variable "tls" {
@@ -65,10 +67,22 @@ variable "tls" {
     admin_cert  = string
     admin_key   = string
   })
+  sensitive = true
 }
 
 variable "install_dependencies" {
   description = "Whether to install all dependencies in cloud-init"
   type        = bool
   default     = true
+}
+
+variable "snapshot_repository" {
+  description = "Optional credentials and CA material for the snapshot repository"
+  type = object({
+    access_key = optional(string, "")
+    secret_key = optional(string, "")
+    ca_certs   = optional(list(string), [])
+  })
+  default = {}
+  sensitive = true
 }

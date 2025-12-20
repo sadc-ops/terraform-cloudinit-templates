@@ -39,6 +39,47 @@ write_files:
     permissions: "0400"
     content: |
       ${indent(6, tls.admin_key)}
+%{ if length(try(snapshot_repository.ca_certs, [])) > 0 ~}
+%{ for idx, cert in snapshot_repository.ca_certs ~}
+  - path: /etc/opensearch/snapshot-repository/ca-${idx}.crt
+    owner: root:root
+    permissions: "0400"
+    content: |
+      ${indent(6, cert)}
+%{ endfor ~}
+%{ endif ~}
+%{ if length(try(snapshot_repository.ca_certs, [])) > 0 ~}
+  - path: /usr/local/bin/import_snapshot_repository_ca
+    owner: root:root
+    permissions: "0555"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      CA_DIR=/etc/opensearch/snapshot-repository
+      CACERTS="/opt/opensearch/jdk/lib/security/cacerts"
+      OS_KEYSTORE="/etc/opensearch/configuration/opensearch.keystore"
+
+      shopt -s nullglob
+      for cert in "$CA_DIR"/ca-*.crt; do
+        if openssl x509 -in "$cert" -noout -text | grep -q "CA:TRUE"; then
+          alias="snapshot-repository-$(basename "$cert" .crt)"
+          if ! /opt/opensearch/jdk/bin/keytool -list -alias "$alias" -keystore "$CACERTS" -storepass changeit >/dev/null 2>&1; then
+            /opt/opensearch/jdk/bin/keytool -importcert -noprompt \
+              -alias "$alias" \
+              -file "$cert" \
+              -keystore "$CACERTS" \
+              -storepass changeit
+          fi
+        fi
+        rm -f "$cert"
+      done
+      shopt -u nullglob
+
+      chown opensearch:opensearch "$OS_KEYSTORE"
+      chmod 600 "$OS_KEYSTORE"
+
+%{ endif ~}
 %{ if length(try(opensearch_cluster.audit.external.http_endpoints, [])) > 0 ~}
 %{ if try(opensearch_cluster.audit.external.auth.ca_cert, "") != "" ~}
   - path: /etc/opensearch/audit-external/ca.crt
@@ -301,6 +342,7 @@ runcmd:
   - tar zxvf /opt/opensearch.tar.gz -C /opt
   - mv /opt/opensearch-2.2.1 /opt/opensearch
   - /opt/opensearch/bin/opensearch-plugin install -b https://github.com/aiven/prometheus-exporter-plugin-for-opensearch/releases/download/2.2.1.0/prometheus-exporter-2.2.1.0.zip
+  - /opt/opensearch/bin/opensearch-plugin install -b repository-s3
   - chown -R opensearch:opensearch /opt/opensearch
   - rm /opt/opensearch.tar.gz
 %{ endif ~}
@@ -312,6 +354,21 @@ runcmd:
   - echo 'vm.swappiness = 1' >> /etc/sysctl.conf
   - sysctl -p
   - chown -R opensearch:opensearch /etc/opensearch
+%{ if try(snapshot_repository.access_key, "") != "" ~}
+  - |
+      cat <<'EOF' | OPENSEARCH_PATH_CONF=/etc/opensearch/configuration /opt/opensearch/bin/opensearch-keystore add --stdin --force s3.client.default.access_key
+      ${snapshot_repository.access_key}
+      EOF
+%{ endif ~}
+%{ if try(snapshot_repository.secret_key, "") != "" ~}
+  - |
+      cat <<'EOF' | OPENSEARCH_PATH_CONF=/etc/opensearch/configuration /opt/opensearch/bin/opensearch-keystore add --stdin --force s3.client.default.secret_key
+      ${snapshot_repository.secret_key}
+      EOF
+%{ endif ~}
+%{ if length(try(snapshot_repository.ca_certs, [])) > 0 ~}
+  - /usr/local/bin/import_snapshot_repository_ca
+%{ endif ~}
   - systemctl enable opensearch.service
   - systemctl start opensearch.service
   - /usr/local/bin/bootstrap_opensearch

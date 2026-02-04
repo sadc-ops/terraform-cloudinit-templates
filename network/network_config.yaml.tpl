@@ -1,46 +1,49 @@
-version: 2
-renderer: networkd
-ethernets:
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
 %{ for idx, val in network_interfaces ~}
-  eth${idx}:
+    eth${idx}:
+%{ if val.mac != null ~}
+      match:
+        macaddress: ${val.mac}
+%{ endif ~}
+      set-name: ${val.interface}
 %{ if val.interface != "" ~}
-    set-name: ${val.interface}
+      set-name: ${val.interface}
 %{ else ~}
-    set-name: eth${idx}
+      set-name: eth${idx}
 %{ endif ~}
-%{ if val.ip != "" ~}
-    dhcp4: false
+%{ if val.ip != null ~}
+      # Static addressing mode
+      dhcp4: false
+      addresses:
+        - ${val.ip}/${val.prefix_length}
+      routes:
+        - to: default
+          via: ${val.gateway}
 %{ else ~}
-    dhcp4: true
-%{ if val.dhcp_identifier != "" ~}
-    dhcp-identifier: ${val.dhcp_identifier}
+      # DHCP mode
+      dhcp4: true
+      dhcp-identifier: ${val.dhcp_identifier}
+      dhcp4-overrides:
+        use-dns: ${val.dhcp4_overrides.use_dns}
+        use-mtu: ${val.dhcp4_overrides.use_mtu}
+        use-domains: ${val.dhcp4_overrides.use_domains}
 %{ endif ~}
-%{ if try(length(val.dhcp4_overrides), 0) > 0 ~}
-    dhcp4-overrides:
-%{ if can(val.dhcp4_overrides.use_dns) ~}
-      use-dns: ${val.dhcp4_overrides.use_dns}
-%{ endif ~}
-%{ if can(val.dhcp4_overrides.use_domains) ~}
-      use-domains: ${val.dhcp4_overrides.use_domains}
-%{ endif ~}
-%{ endif ~}
-%{ endif ~}
-%{ if val.mac != "" ~}
-    match:
-      macaddress: ${val.mac}
-%{ endif ~}
-%{ if val.ip != "" ~}
-    addresses:
-      - ${val.ip}/${val.prefix_length}
-%{ endif ~}
-%{ if val.gateway != "" ~}
-    gateway4: ${val.gateway}
-%{ endif ~}
+%{ if length(val.dns_servers) > 0 || length(val.search_domains) > 0 ~}
+      nameservers:
 %{ if length(val.dns_servers) > 0 ~}
-    nameservers:
-      addresses: ${yamlencode(val.dns_servers)}
+        addresses:
+%{ for dns in val.dns_servers ~}
+          - ${dns}
+%{ endfor ~}
+%{ endif ~}
 %{ if length(val.search_domains) > 0 ~}
-      search: ${yamlencode(val.search_domains)}
+        search:
+%{ for domain in val.search_domains ~}
+          - ${domain}
+%{ endfor ~}
 %{ endif ~}
 %{ endif ~}
 %{ endfor ~}

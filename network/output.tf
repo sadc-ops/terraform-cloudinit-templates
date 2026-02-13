@@ -4,6 +4,7 @@ output "configuration" {
     "${path.module}/network_config.yaml.tpl", 
     {
       network_interfaces = var.network_interfaces
+      machine= var.machine
     }
   )
 }

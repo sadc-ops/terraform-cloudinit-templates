@@ -27,5 +27,5 @@ packages:
 %{ endif ~}
 
 runcmd:
-  - cp /opt/chrony.conf /etc/chrony/chrony.conf
+  - mv /opt/chrony.conf /etc/chrony/chrony.conf
   - systemctl restart chrony.service 

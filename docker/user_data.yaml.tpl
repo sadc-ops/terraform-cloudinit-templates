@@ -5,6 +5,10 @@ merge_how:
  - name: dict
    settings: [no_replace, recurse_list]
 
+groups:
+  - docker
+
+%{ if install_dependencies ~}
 write_files:
   - path: /usr/local/bin/install_docker.sh
     owner: root:root
@@ -12,6 +16,12 @@ write_files:
     encoding: b64
     content: ${docker_install_script}
 
+%{ endif ~}
 runcmd:
+%{ if install_dependencies ~}
   - /usr/local/bin/install_docker.sh
   - rm /usr/local/bin/install_docker.sh
+%{ endif ~}
+%{ for user in docker_users ~}
+  - usermod -aG docker "${user}"
+%{ endfor ~}

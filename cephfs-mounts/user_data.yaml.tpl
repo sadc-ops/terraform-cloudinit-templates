@@ -41,7 +41,10 @@ runcmd:
   - NAMESPACE_ARG=,mds_namespace=${share.mount_opt_fs}
 %{ endif ~}
   - mkdir -p /mnt/${share.name}
-  - chown ${share.folder_owner}:${share.folder_owner} /mnt/${share.name}
   - echo "${share.export_loc_path_vol} /mnt/${share.name}/ ceph name=${share.cephx_access_to},x-systemd.device-timeout=30,x-systemd.mount-timeout=30,noatime,_netdev,rw$${NAMESPACE_ARG} 0  2" >> /etc/fstab
 %{ endfor ~}
   - mount -a
+%{ for share in shares ~}
+  - chown ${share.folder_owner}:${share.folder_group} /mnt/${share.name}
+  - chmod 770 /mnt/${share.name}
+%{ endfor ~}

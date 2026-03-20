@@ -18,5 +18,6 @@ variable "shares" {
     cephx_access_key    = string
     mount_opt_fs        = string
     folder_owner        = string
+    folder_group        = string
   }))
 }

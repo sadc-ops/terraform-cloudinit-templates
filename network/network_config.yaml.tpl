@@ -4,7 +4,7 @@ network:
   ethernets:
 %{ for idx, val in network_interfaces ~}
 %{ if machine == "q35" ~}
-    enp${1 + idx}s0:
+    enp${2 + idx}s0:
 %{ else ~}
     ens${3 + idx}:
 %{ endif ~}

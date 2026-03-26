@@ -1,14 +1,14 @@
 variable "network_interfaces" {
   description = "List of network interfaces. Each entry has the following keys: interface, prefix_length, ip, mac, gateway (optional) and dns_servers (optional),search_domain (optional), dhcp_identifier (optional), dhcp4_overrides (optional)."
-  type        = list(object({
-    interface = string,
-    prefix_length = optional(number),
-    ip  = optional(string),
-    mac = optional(string),
-    gateway = optional(string),
-    dns_servers = optional(list(string), [])
-    search_domains = optional(list(string), [])
-    dhcp_identifier = optional(string,"duid")
+  type = list(object({
+    interface       = string,
+    prefix_length   = optional(number),
+    ip              = optional(string),
+    mac             = optional(string),
+    gateway         = optional(string),
+    dns_servers     = optional(list(string), [])
+    search_domains  = optional(list(string), [])
+    dhcp_identifier = optional(string, "duid")
     dhcp4_overrides = optional(object({
       use_dns     = optional(bool)
       use_mtu     = optional(bool)
@@ -43,7 +43,7 @@ variable "network_interfaces" {
     condition = alltrue([
       for iface in var.network_interfaces :
       iface.ip == null || iface.prefix_length != null
-      ])
+    ])
     error_message = "Static addressing: 'prefix_length' is required when 'ip' is specified."
   }
 
@@ -52,7 +52,7 @@ variable "network_interfaces" {
     condition = alltrue([
       for iface in var.network_interfaces :
       iface.ip == null || iface.gateway != null
-      ])
+    ])
     error_message = "Static addressing: 'gateway' is required when 'ip' is specified."
   }
 
@@ -61,7 +61,7 @@ variable "network_interfaces" {
     condition = alltrue([
       for iface in var.network_interfaces :
       iface.ip == null || length(iface.dns_servers) > 0
-      ])
+    ])
     error_message = "Static addressing: at least one 'dns_servers' entry is required when 'ip' is specified."
   }
 
@@ -74,7 +74,7 @@ variable "network_interfaces" {
     condition = alltrue([
       for iface in var.network_interfaces :
       iface.ip != null || iface.prefix_length == null
-      ])
+    ])
     error_message = "DHCP mode: 'prefix_length' cannot be specified without 'ip'. DHCP server provides the prefix length."
   }
 
@@ -83,7 +83,7 @@ variable "network_interfaces" {
     condition = alltrue([
       for iface in var.network_interfaces :
       iface.ip != null || iface.gateway == null
-      ])
+    ])
     error_message = "DHCP mode: 'gateway' cannot be specified without 'ip'. DHCP server provides the gateway."
   }
 }
@@ -93,18 +93,18 @@ variable "interface_naming" {
     This variable defines a interface naming template strategy to use to construct the network config
   EOT
 
-  type    = object({
-    template = string
+  type = object({
+    template    = string
     start_index = number
   })
 
   validation {
-    condition     =strcontains(var.interface_naming.template,"index")
+    condition     = strcontains(var.interface_naming.template, "index")
     error_message = "The template must contain the 'index' keyword. Use variable default as example"
   }
 
   default = {
-    template = "ens$${index}"
+    template    = "ens$${index}"
     start_index = 3
   }
 }

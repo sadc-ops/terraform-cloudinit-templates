@@ -3,11 +3,7 @@ network:
   renderer: networkd
   ethernets:
 %{ for idx, val in network_interfaces ~}
-%{ if machine == "q35" ~}
-    enp${2 + idx}s0:
-%{ else ~}
-    ens${3 + idx}:
-%{ endif ~}
+    ${interface_names[idx]}:
 %{ if val.mac != null ~}
       match:
         macaddress: ${val.mac}

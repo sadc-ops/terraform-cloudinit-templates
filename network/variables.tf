@@ -88,27 +88,23 @@ variable "network_interfaces" {
   }
 }
 
-variable "machine" {
+variable "interface_naming" {
   description = <<-EOT
-    The machine type, you normally won't need to set this unless you are running
-    on a platform that defaults to the wrong machine type for your template.
-
-    This affects netplan ethernets naming policies because the machine type
-    determines the PCI topology, which systemd uses for predictable interface
-    naming:
-
-    | Machine | PCI Topology                  | Naming Scheme | Typical Name     |
-    |---------|-------------------------------|---------------|------------------|
-    | i440FX  | Flat PCI bus 0, slot/device   | ens (slot)    | ens3, ens9       |
-    | Q35     | PCIe root ports, bus/device   | enp (path)    | enp1s0, enp2s0   |
-
-    When possible cloud-init netplan configs should match interfaces by MAC
-    address to avoid breakage from PCI topology changes.
+    This variable defines a interface naming template strategy to use to construct the network config
   EOT
-  type    = string
+
+  type    = object({
+    template = string
+    start_index = number
+  })
+
   validation {
-    condition     = var.machine == "" || var.machine == "q35"
-    error_message = "machine can only be empty or have q35 as value."
+    condition     =strcontains(var.interface_naming.template,"index")
+    error_message = "The template must contain the 'index' keyword. Use variable default as example"
   }
-  default = ""
+
+  default = {
+    template = "ens$${index}"
+    start_index = 3
+  }
 }

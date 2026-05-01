@@ -3,15 +3,14 @@ network:
   renderer: networkd
   ethernets:
 %{ for idx, val in network_interfaces ~}
+%{ if val.mac != null && val.interface != null}
+    ${val.interface}:
+%{ else ~}
     ${interface_names[idx]}:
+%{ endif ~}
 %{ if val.mac != null ~}
       match:
         macaddress: ${val.mac}
-%{ if val.interface != "" ~}
-      set-name: ${val.interface}
-%{ else ~}
-      set-name: eth${idx}
-%{ endif ~}
 %{ endif ~}
 %{ if val.ip != null ~}
       # Static addressing mode

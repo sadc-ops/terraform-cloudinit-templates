@@ -7,10 +7,12 @@ network:
 %{ if val.mac != null ~}
       match:
         macaddress: ${val.mac}
+%{ if val.ip != null ~}
 %{ if val.interface != "" ~}
       set-name: ${val.interface}
 %{ else ~}
       set-name: eth${idx}
+%{ endif ~}
 %{ endif ~}
 %{ endif ~}
 %{ if val.ip != null ~}
